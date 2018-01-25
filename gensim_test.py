@@ -10,6 +10,7 @@ from headline_analyzer import HeadlineAnalyzer
 
 
 LIMIT = 1000000
+pkl_path = 'non_matches.pkl'
 # while True:
 #     print("Every second.")
 #     time.sleep(1)
@@ -178,8 +179,9 @@ def main():
     # Pickle load non-matches at this point
     # In case the following code errors
     try:
-        with open('non_matches.pkl') as file:
-            non_matches = pickle.load(pkl)
+        with open(pkl_path, 'wb') as file:
+            print("Pickled file read into non_matches.")
+            non_matches = pickle.load(file)
     except IOError as e:
         print("Couldn't open pickled non-matches.")
         print("Continuing...")
@@ -210,10 +212,9 @@ def main():
                     pair = [[nonmatch, vec]]
                     pair_arr = np.array(pair, dtype=object)
                     np.append(word_vec_pairs, pair_arr, axis=0)
-                    # with open('word_vectors.npy', 'wb') as f:
-                    #     np.save(f, word_vec_pairs)
+                    with open(pkl_path, 'wb') as f:
+                        pickle.dump(non_matches, f)
                     non_matches.remove(nonmatch)
-                    pickle.dump(non_matches, 'non_matches.pkl')
                     break
                 # time.sleep(10)
             # except Exception as e:
