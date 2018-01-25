@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import re
 import string
+import pickle
 from headline_analyzer import HeadlineAnalyzer
 
 
@@ -102,18 +103,18 @@ def encode_utf8_or_nothing(string):
         print("Word not unicode. Don't do anything")
     return string
 
-    def find_word_encoding(w, model):
-       try:
-            vec = model[w]
-            pair = [w, vec]
-            pair_arr = np.array(pair, dtype=object)
-            return True, pair_arr
-        except KeyError as e:
-            print('Word {} not in model vocab.'.format(w))
-            vec = None
-            pair = [w, vec]
-            pair_arr = np.array(pair, dtype=object)
-            return False, pair_arr
+def find_word_encoding(w, model):
+    try:
+        vec = model[w]
+        pair = [w, vec]
+        pair_arr = np.array(pair, dtype=object)
+        return True, pair_arr
+    except KeyError as e:
+        print('Word {} not in model vocab.'.format(w))
+        vec = None
+        pair = [w, vec]
+        pair_arr = np.array(pair, dtype=object)
+        return False, pair_arr
 
 
 
@@ -134,7 +135,7 @@ def main():
     word_vecs = []
     n_words = len(words)
     non_matches = []
-    
+
     # First run through the vocab to find encodings
     for i, w in enumerate(words):
         if i % 100 == 0:
@@ -148,6 +149,7 @@ def main():
 
     # Second run through non-matches to match multiword non-matches to 
     # encodings
+    to_remove = []
     for i, nonmatch in enumerate(non_matches):
         if i % 100 == 0:
             print('On {0}/{1} word'.format(i, len(non_matches)))
@@ -164,7 +166,23 @@ def main():
                     else:
                         non_matches.append(result)
                 if split_success:
-                    non_matches.remove(nonmatch)
+                    to_remove.append(nonmatch)
+
+    # Remove words that had a match
+    if to_remove:
+        for w in to_remove:
+            non_matches.remove(w)
+
+    word_vec_pairs = np.array(word_vecs)
+
+    # Pickle load non-matches at this point
+    # In case the following code errors
+    try:
+        with open('non_matches.pkl') as file:
+            non_matches = pickle.load(pkl)
+    except IOError as e:
+        print("Couldn't open pickled non-matches.")
+        print("Continuing...")
 
     # Looks through non-matches 
     print('Looking for alternatives for non-matches...')
@@ -172,7 +190,7 @@ def main():
         if i % 100 == 0:
             print('On {0}/{1} word'.format(i, len(non_matches)))
         if nonmatch:
-            vocab = word_vec_pairs[:, 0]
+            # vocab = word_vec_pairs[:, 0]
             # five_most_similar = model.most_similar(positive=[w], topn=5)
             five_least_edits = n_least_edits(5, nonmatch, word2vec_vocab)
             print('{0} most similar to {1}'.format(five_least_edits, nonmatch))
@@ -187,12 +205,15 @@ def main():
                     print('Found a match!')
                     _pot_match = encode_utf8_or_nothing(pot_match)
                     _nonmatch = encode_utf8_or_nothing(nonmatch)
-                    print('Matched {0} to {1}.'.format(nonmatch_, pot_match_))
+                    print('Matched {0} to {1}.'.format(_nonmatch, _pot_match))
                     vec = model[pot_match]
                     pair = [[nonmatch, vec]]
                     pair_arr = np.array(pair, dtype=object)
                     np.append(word_vec_pairs, pair_arr, axis=0)
+                    # with open('word_vectors.npy', 'wb') as f:
+                    #     np.save(f, word_vec_pairs)
                     non_matches.remove(nonmatch)
+                    pickle.dump(non_matches, 'non_matches.pkl')
                     break
                 # time.sleep(10)
             # except Exception as e:
@@ -202,7 +223,6 @@ def main():
     diff = abs(len(word_vecs) - len(words))
     print('Number of word missing form word2vec vocab: {}'.format(diff))
     with open('word_vectors.npy', 'wb') as f:
-        word_vec_pairs = np.array(word_vecs)
         np.save(f, word_vec_pairs)
     # df.save_csv('word_vecs.csv')
 
