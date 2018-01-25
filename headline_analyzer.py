@@ -35,7 +35,7 @@ class HeadlineAnalyzer():
         new_token_list = []
 
         for token in token_list:
-            print(token, type(token))
+            # print(token, type(token))
             new_token = self.regex.sub(u'', token)
             # new_token = regex.sub('[\p{P}\p{Sm}]+', '', token)
             # Handle if not solely punctuation (words in addition to punctuation)

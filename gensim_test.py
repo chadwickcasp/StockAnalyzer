@@ -79,16 +79,21 @@ class VocabEncoder():
         """
 
 
-# def contains_two_words(word):
-#     hyphen = re.compile('[a-zA-Z]-[a-zA-Z]')
-#     underscore = re.compile('[a-zA-Z]_[a-zA-Z]')
-#     if '-' in word:
-#         return True
-#     if '_' in word:
-#         return True
-#     if '/'
-#     else:
-#         return False
+def contains_mult_words(word):
+    hyphen = re.compile('[a-zA-Z]-[a-zA-Z]')
+    underscore = re.compile('[a-zA-Z]_[a-zA-Z]')
+    f_slash = re.compile('[a-zA-Z]/[a-zA-Z]')
+    b_slash = re.compile('[a-zA-Z]\[a-zA-Z]')
+    if hyphen.search(word):
+        return True, '-'
+    if underscore.search(word):
+        return True, '_'
+    if f_slash.search(word):
+        return True, '/'
+    if b_slash.search(word):
+        return True, '\\'
+    else:
+        return False, None
 
 def encode_utf8_or_nothing(string):
     try:
@@ -96,6 +101,20 @@ def encode_utf8_or_nothing(string):
     except UnicodeDecodeError as e:
         print("Word not unicode. Don't do anything")
     return string
+
+    def find_word_encoding(w, model):
+       try:
+            vec = model[w]
+            pair = [w, vec]
+            pair_arr = np.array(pair, dtype=object)
+            return True, pair_arr
+        except KeyError as e:
+            print('Word {} not in model vocab.'.format(w))
+            vec = None
+            pair = [w, vec]
+            pair_arr = np.array(pair, dtype=object)
+            return False, pair_arr
+
 
 
 def main():
@@ -115,29 +134,39 @@ def main():
     word_vecs = []
     n_words = len(words)
     non_matches = []
+    
+    # First run through the vocab to find encodings
     for i, w in enumerate(words):
         if i % 100 == 0:
             print('On {0}/{1} word'.format(i, n_words))
         if w:
-            try:
-                vec = model[w]
-                pair = [w, vec]
-                # print(pair)
-                pair_arr = np.array(pair, dtype=object)
-                word_vecs.append(pair_arr)
-            except KeyError as e:
-                print('Word {} not in model vocab.'.format(w))
+            found, result = find_word_encoding(w, model)
+            if found:
+                word_vecs.append(result)
+            else:
                 non_matches.append(w)
-                continue
 
-    word_vec_pairs = np.array(word_vecs)
+    # Second run through non-matches to match multiword non-matches to 
+    # encodings
+    for i, nonmatch in enumerate(non_matches):
+        if i % 100 == 0:
+            print('On {0}/{1} word'.format(i, len(non_matches)))
+        if nonmatch:
+            true, character = contains_mult_words(nonmatch)
+            if true:
+                words = nonmatch.split(character)
+                split_success = False
+                for word in words:
+                    found, result = find_word_encoding(w, model)
+                    if found:
+                        word_vecs.append(result)
+                        split_success = True
+                    else:
+                        non_matches.append(result)
+                if split_success:
+                    non_matches.remove(nonmatch)
 
-    # for i, nonmatch in enumerate(non_matches):
-    #     if i % 100 == 0:
-    #         print('On {0}/{1} word'.format(i, len(non_matches)))
-    #     if nonmatch:
-
-
+    # Looks through non-matches 
     print('Looking for alternatives for non-matches...')
     for i, nonmatch in enumerate(non_matches):
         if i % 100 == 0:
@@ -147,17 +176,17 @@ def main():
             # five_most_similar = model.most_similar(positive=[w], topn=5)
             five_least_edits = n_least_edits(5, nonmatch, word2vec_vocab)
             print('{0} most similar to {1}'.format(five_least_edits, nonmatch))
-            print(nonmatch.decode('utf-8'))
+            # print(nonmatch.decode('utf-8'))
             nm_normed = HA.strip_and_norm(nonmatch.decode('utf-8'))
             for tup in five_least_edits:
                 pot_match = tup[0]
                 pm_normed = HA.strip_and_norm(pot_match)
                 # word_lower.decode('utf-8')
-                print(pm_normed, nm_normed)
+                # print(pm_normed, nm_normed)
                 if nm_normed in pm_normed or pm_normed in nm_normed:
                     print('Found a match!')
-                    pot_match_ = encode_utf8_or_nothing(pot_match)
-                    nonmatch_ = encode_utf8_or_nothing(nonmatch)
+                    _pot_match = encode_utf8_or_nothing(pot_match)
+                    _nonmatch = encode_utf8_or_nothing(nonmatch)
                     print('Matched {0} to {1}.'.format(nonmatch_, pot_match_))
                     vec = model[pot_match]
                     pair = [[nonmatch, vec]]
@@ -173,6 +202,7 @@ def main():
     diff = abs(len(word_vecs) - len(words))
     print('Number of word missing form word2vec vocab: {}'.format(diff))
     with open('word_vectors.npy', 'wb') as f:
+        word_vec_pairs = np.array(word_vecs)
         np.save(f, word_vec_pairs)
     # df.save_csv('word_vecs.csv')
 
