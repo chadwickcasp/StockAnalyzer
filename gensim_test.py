@@ -58,6 +58,46 @@ def n_least_edits(n, word, vocab):
         vocab.remove(most_similar)
     return n_similar
 
+class VocabEncoder():
+
+    def __init__(self):
+        """Encode a vocab using a model (for now just gensim is supported)
+        
+        Args:
+            vocab: The vocab of your data. Can be JSON data, a file path to
+            JSON data or a pandas dataframe.
+            model: Gensim model, which acts as a dictionary mapping word to
+            encoding (e.g. a vector using word2vec)
+
+        Usage:
+            ve = VocabEncoder(vocab, model)
+            # Encode creates an encoding matching words to encoding value.
+            # It returns it and saves the encoding as a numpy matrix in a
+            # .npy file
+            ve.encode(options)
+        
+        """
+
+
+# def contains_two_words(word):
+#     hyphen = re.compile('[a-zA-Z]-[a-zA-Z]')
+#     underscore = re.compile('[a-zA-Z]_[a-zA-Z]')
+#     if '-' in word:
+#         return True
+#     if '_' in word:
+#         return True
+#     if '/'
+#     else:
+#         return False
+
+def encode_utf8_or_nothing(string):
+    try:
+        string = string.encode('utf-8')
+    except UnicodeDecodeError as e:
+        print("Word not unicode. Don't do anything")
+    return string
+
+
 def main():
     vocab_df = pd.read_csv('vocab.csv', index_col = 0)
     vocab_df = vocab_df.sort_values(by='Frequency')
@@ -92,32 +132,38 @@ def main():
 
     word_vec_pairs = np.array(word_vecs)
 
+    # for i, nonmatch in enumerate(non_matches):
+    #     if i % 100 == 0:
+    #         print('On {0}/{1} word'.format(i, len(non_matches)))
+    #     if nonmatch:
+
+
     print('Looking for alternatives for non-matches...')
-    for i, w in enumerate(non_matches):
+    for i, nonmatch in enumerate(non_matches):
         if i % 100 == 0:
             print('On {0}/{1} word'.format(i, len(non_matches)))
-        if w:
+        if nonmatch:
             vocab = word_vec_pairs[:, 0]
             # five_most_similar = model.most_similar(positive=[w], topn=5)
-            five_least_edits = n_least_edits(5, w, word2vec_vocab)
-            print('{0} most similar to {1}'.format(five_least_edits, w))
+            five_least_edits = n_least_edits(5, nonmatch, word2vec_vocab)
+            print('{0} most similar to {1}'.format(five_least_edits, nonmatch))
+            print(nonmatch.decode('utf-8'))
+            nm_normed = HA.strip_and_norm(nonmatch.decode('utf-8'))
             for tup in five_least_edits:
-                word = tup[0]
-                # Check for different circumstances
-                w_lower, word_lower = string.lower(w), string.lower(word)
-                w_lower = re.sub('-', '_', w_lower)
-                word_lower = re.sub('-', '_', word_lower)
-                word_lower = HA.remove_non_joiners([word_lower])[0]
-                word_lower.decode('utf-8')
-                print(word_lower)
-                if w_lower in word_lower or word_lower in w_lower:
+                pot_match = tup[0]
+                pm_normed = HA.strip_and_norm(pot_match)
+                # word_lower.decode('utf-8')
+                print(pm_normed, nm_normed)
+                if nm_normed in pm_normed or pm_normed in nm_normed:
                     print('Found a match!')
-                    print('Matched {0} to {1}.'.format(w_lower, word_lower))
-                    vec = model[word]
-                    pair = [[w, vec]]
+                    pot_match_ = encode_utf8_or_nothing(pot_match)
+                    nonmatch_ = encode_utf8_or_nothing(nonmatch)
+                    print('Matched {0} to {1}.'.format(nonmatch_, pot_match_))
+                    vec = model[pot_match]
+                    pair = [[nonmatch, vec]]
                     pair_arr = np.array(pair, dtype=object)
                     np.append(word_vec_pairs, pair_arr, axis=0)
-                    non_matches.remove(w)
+                    non_matches.remove(nonmatch)
                     break
                 # time.sleep(10)
             # except Exception as e:
