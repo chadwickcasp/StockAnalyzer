@@ -109,7 +109,8 @@ for month, year in month_list:
     ax.set_yticklabels(top_bigrams)
     ax.invert_yaxis()  # labels read top-to-bottom
     ax.set_xlabel('Frequency')
-    ax.set_title('Top {2} Bigrams of articles from {0}-{1}'.format(month, year, n_analyzed))
+    ax.set_title('Top {2} Bigrams of articles \
+        from {0}-{1}'.format(month, year, n_analyzed))
     plt.tight_layout()
 
     plt.rcdefaults()
