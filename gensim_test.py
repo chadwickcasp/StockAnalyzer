@@ -11,6 +11,7 @@ from headline_analyzer import HeadlineAnalyzer
 
 LIMIT = 1000000
 pkl_path = 'non_matches.pkl'
+no_known_matches_pkl = 'no_known_matches.pkl'
 # while True:
 #     print("Every second.")
 #     time.sleep(1)
@@ -136,6 +137,7 @@ def main():
     word_vecs = []
     n_words = len(words)
     non_matches = []
+    no_known_matches = []
 
     # First run through the vocab to find encodings
     for i, w in enumerate(words):
@@ -179,30 +181,31 @@ def main():
     # Pickle load non-matches at this point
     # In case the following code errors
     try:
-        with open(pkl_path, 'wb') as file:
-            print("Pickled file read into non_matches.")
+        with open(pkl_path, 'rb') as file:
             non_matches = pickle.load(file)
+            print("Pickled file read into non_matches.")
     except IOError as e:
         print("Couldn't open pickled non-matches.")
         print("Continuing...")
 
     # Looks through non-matches 
     print('Looking for alternatives for non-matches...')
-    for i, nonmatch in enumerate(non_matches):
+    nm = non_matches[:]
+    for i, nonmatch in enumerate(nm):
         if i % 100 == 0:
             print('On {0}/{1} word'.format(i, len(non_matches)))
         if nonmatch:
-            # vocab = word_vec_pairs[:, 0]
-            # five_most_similar = model.most_similar(positive=[w], topn=5)
             five_least_edits = n_least_edits(5, nonmatch, word2vec_vocab)
             print('{0} most similar to {1}'.format(five_least_edits, nonmatch))
-            # print(nonmatch.decode('utf-8'))
             nm_normed = HA.strip_and_norm(nonmatch.decode('utf-8'))
+            non_matches.remove(nonmatch)
+
+            # Look through the words with minimum edit distance from word
             for tup in five_least_edits:
                 pot_match = tup[0]
                 pm_normed = HA.strip_and_norm(pot_match)
-                # word_lower.decode('utf-8')
-                # print(pm_normed, nm_normed)
+
+                # If either word is part of the other, consider a match
                 if nm_normed in pm_normed or pm_normed in nm_normed:
                     print('Found a match!')
                     _pot_match = encode_utf8_or_nothing(pot_match)
@@ -214,12 +217,17 @@ def main():
                     np.append(word_vec_pairs, pair_arr, axis=0)
                     with open(pkl_path, 'wb') as f:
                         pickle.dump(non_matches, f)
-                    non_matches.remove(nonmatch)
                     break
-                # time.sleep(10)
-            # except Exception as e:
-            #     print('Couldn\'t find most similar words.')
-            #     # raise(e)
+
+            # Didn't find any similar words in the model
+            # non_matches.remove(nonmatch)
+            vec = None
+            pair = [nonmatch, vec]
+            pair_arr = np.array(pair, dtype=object)
+            no_known_matches.append(pair_arr)
+            with open(no_known_matches_pkl, 'wb') as f:
+                pickle.dump(no_known_matches, f)
+
     print(non_matches)
     diff = abs(len(word_vecs) - len(words))
     print('Number of word missing form word2vec vocab: {}'.format(diff))
