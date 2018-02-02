@@ -29,14 +29,18 @@ def n_grams(tokens, n):
     return zip(*[tokens[i:] for i in range(n)])
 
 n_analyzed = 30
-month_list = [((now.month + i-1)%12+1, int(floor((now.month+i)/13)+now.year-1)) for i \
-              in range(number_of_months+1)]
+month_list = [((now.month + i-1)%12+1, \
+                int(floor((now.month+i)/13)+now.year-1)) for i \
+                in range(number_of_months+1)]
 for ticker in tickers:
     overall_diffs = pd.DataFrame()
     for month, year in month_list:
         print(month, year)
         try:
-            df = pd.read_csv('./Data/NYTimesArticlesAndStocks('+ticker_string_list+')_{0}-{1}.csv'.format(month,year))
+            file = './Data/NYTimesArticlesAndStocks('+\
+                   ticker_string_list+\
+                   ')_{0}-{1}.csv'.format(month,year)
+            df = pd.read_csv(file)
         except IOError as e:
             print("Month data not found in directory...")
             print("Check list and try again")
@@ -52,20 +56,56 @@ for ticker in tickers:
         # bigrams_dict = {}
         # trigrams_dict = {}
         # grams_dict = {}
-        print(df.columns)
+        # print(df.columns)
         diffs = pd.DataFrame()
         diffs['date'] = df['date'].drop_duplicates()
         diffs['close'] = df['close'].drop_duplicates()
         overall_diffs = overall_diffs.append(diffs)
 
-    print(overall_diffs)
-    print(overall_diffs.columns)
+    # print(overall_diffs)
+    # print(overall_diffs.columns)
     overall_diffs = overall_diffs.sort_values('date')
     overall_diffs['diffs'] = (overall_diffs['close'] - overall_diffs['close'].shift(-1))
     overall_diffs['diffs'] = overall_diffs['diffs'].divide(overall_diffs['close'])*100
-    print(overall_diffs)
-    plt.figure()
+    # print(overall_diffs)
+    positive_diffs = overall_diffs[overall_diffs['diffs'] > 0]
+    num_positive = len(positive_diffs)
+    negative_diffs = overall_diffs[overall_diffs['diffs'] < 0]
+    num_negative = len(negative_diffs)
+    zero_diffs = overall_diffs[overall_diffs['diffs'] == 0]
+    num_zero = len(zero_diffs)
+    print("Ratio of positive to "
+          "negative labels: {0}:{1}:{2}".format(num_positive,
+                                                num_negative,
+                                                num_zero))
+    # plt.figure()
     overall_diffs.hist(column='diffs', alpha=0.7, bins=50)
     plt.title("Frequency of Day-to-day Percent Changes of {}".format(ticker))
 plt.show()
+
+def load_word_vectors(filename):
+    try:
+        with open(filename, 'wb') as f:
+            arr = np.load(f, word_vec_pairs)
+    except IOError as e:
+        print("Couldn't load the word vectors...")
+        print("Check file name and try again")
+    return arr
+
+def map_headline_to_vector_list(headline, word_vecs_arr):
+    '''Maps words in a head line to a list of word2vec vectors
+    '''
+
+
+def avg_headline(headline):
+    '''Averages all of the word vectors over a headline.
+    '''
+
+
+def word_vector_analysis(word_vecs_arr, headline_df):
+    '''Finds things like the average word for a certain market move (positive
+    or negative
+    '''
+
+
     # for i, article in enumerate(docs):
