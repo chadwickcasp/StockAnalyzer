@@ -230,7 +230,7 @@ def main():
 
     print(non_matches)
     diff = abs(len(word_vecs) - len(words))
-    print('Number of word missing form word2vec vocab: {}'.format(diff))
+    print('Number of words missing from word2vec vocab: {}'.format(diff))
     with open('word_vectors.npy', 'wb') as f:
         np.save(f, word_vec_pairs)
     # df.save_csv('word_vecs.csv')
