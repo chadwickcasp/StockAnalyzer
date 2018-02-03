@@ -4,7 +4,8 @@ Analyzes NYTimes headlines using LSTM and other language processing techniques, 
 
 To use, must take three steps:
 1. Obtain Quandl and NYTimes API keys and put them in a file called keys.json of the form:
-```  {
+``` 
+  {
       "quandlkey":"<actualquandlkey>",
       "nytimeskey":"<actualnytimeskey>"
   }
