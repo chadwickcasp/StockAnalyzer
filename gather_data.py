@@ -1,4 +1,3 @@
-from HeadlineGenerator import RSSParser
 import time
 import os
 import datetime as dt

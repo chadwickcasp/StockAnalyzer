@@ -182,7 +182,9 @@ def main():
     # In case the following code errors
     try:
         with open(pkl_path, 'rb') as file:
-            non_matches = pickle.load(file)
+            prev_non_matches = pickle.load(file)
+            non_matches = non_matches + prev_non_matches
+            non_matches = list(set(non_matches))
             print("Pickled file read into non_matches.")
     except IOError as e:
         print("Couldn't open pickled non-matches.")
