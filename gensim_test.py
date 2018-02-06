@@ -63,7 +63,7 @@ def n_least_edits(n, word, vocab):
 
 class VocabEncoder():
 
-    def __init__(self):
+    def __init__(self, model_path):
         """Encode a vocab using a model (for now just gensim is supported)
         
         Args:
@@ -80,7 +80,12 @@ class VocabEncoder():
             ve.encode(options)
         
         """
-
+        print("Loading the Google Word2Vec Model...")
+        w2v_path = model_path
+        self.model = KeyedVectors.load_word2vec_format(w2v_path, 
+                                                  binary=True,
+                                                  limit=LIMIT)  
+        print("Loaded.")
 
 def contains_mult_words(word):
     hyphen = re.compile('[a-zA-Z]-[a-zA-Z]')
@@ -124,13 +129,9 @@ def main():
     vocab_df = pd.read_csv('vocab.csv', index_col = 0)
     vocab_df = vocab_df.sort_values(by='Frequency')
 
-    print("Loading the Google Word2Vec Model...")
-    w2v_path = './GoogleNews-vectors-negative300.bin'
-    model = KeyedVectors.load_word2vec_format(w2v_path, 
-                                              binary=True,
-                                              limit=LIMIT)  
+    VE = VocabEncoder('./GoogleNews-vectors-negative300.bin')
+    model = VE.model
     word2vec_vocab = get_vocab(model)
-    print("Loaded.")
     HA = HeadlineAnalyzer()
 
     words = list(vocab_df['Word'])
