@@ -14,7 +14,7 @@ import json
 import ast
 from headline_analyzer import HeadlineAnalyzer
 from operator import itemgetter
-from gensim_test import n_most_similar, VocabEncoder
+from gensim_test import n_most_similar, VocabEncoder, get_vocab
 
 number_of_months = 12   # Includes current month
 tickers = ['NVDA', 'AMD']   # Ticker symbol list
@@ -43,7 +43,7 @@ def main():
                     in range(number_of_months+1)]
     for ticker in tickers:
         overall_diffs = pd.DataFrame()
-        overall_avg_vec = pd.DataFrame()
+        overall_avg_vec = np.zeros((1, 300))
         for month, year in month_list:
             print(month, year)
             try:
@@ -80,16 +80,23 @@ def main():
             # print(df)
             docs = [df.ix[i] for i in df.index]
             # print(docs)
-            monthly_avg_vec = pd.DataFrame()
+            monthly_avg_vec = np.zeros((1, 300))
             for i, article in enumerate(docs):
-                monthly_avg_vec += map_headline_to_vecs(article, 
-                                                        word_vecs_arr)
+                headline_vecs = map_headline_to_vecs(article, word_vecs_arr)
+                # print(monthly_avg_vec)
+                monthly_avg_vec += reduce((lambda x, y: x + y),
+                                          headline_vecs,
+                                          np.zeros((1,300)))
             monthly_avg_vec = monthly_avg_vec / len(docs)
-            print(n_most_similar(5, monthly_avg_vec, VocabEncoder.model))
+            print("Averaged monthly vector: {}".format(monthly_avg_vec))
+            print(n_most_similar(5, monthly_avg_vec.T, VE.model))
             overall_avg_vec += monthly_avg_vec
+            time.sleep(10)
 
         overall_avg_vec = overall_avg_vec / len(month_list)
-        print(n_most_similar(5, overall_avg_vec, VE.model))
+        print("Averaged overall vector for {0}: {1}".format(ticker, 
+                                                            monthly_avg_vec))
+        print(n_most_similar(5, overall_avg_vec.T, VE.model))
         # print(overall_diffs)
         # print(overall_diffs.columns)
         overall_diffs = overall_diffs.sort_values('date')
@@ -124,8 +131,8 @@ def load_word_vectors(filename):
 def map_headline_to_vecs(article, word_vecs_arr):
     '''Maps words in a head line to a list of word2vec vectors
     '''
-    tokens_list=[]
-    hl_vecs=[]
+    tokens_list = []
+    hl_vecs = []
     if 'headline' in article and not pd.isnull(article['headline']):
         headline_data = article['headline']
         tokens = HA.clean_data(headline_data)
@@ -145,8 +152,8 @@ def map_headline_to_vecs(article, word_vecs_arr):
             hl_vecs.append(word_vecs_dict[token])
         except KeyError as e:
             try:
-                token = HA.strip_and_norm(token.decode('utf-8'))
-                hl_vecs.append(word_vecs_dict[token])
+                _token = HA.strip_and_norm(token.decode('utf-8'))
+                hl_vecs.append(word_vecs_dict[_token])
             except KeyError as e:
                 num_not_in_vocab+=1
                 not_in_vocab.append(token)
@@ -154,6 +161,7 @@ def map_headline_to_vecs(article, word_vecs_arr):
     print("Number of words not in vocab {0} out of {1}".format(num_not_in_vocab,
                                                                len(tokens)))
     print("Word(s) not in vocab: {}".format(not_in_vocab))
+    return hl_vecs
 
 
 

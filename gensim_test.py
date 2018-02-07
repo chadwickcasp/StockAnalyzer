@@ -21,14 +21,18 @@ def elem_removed(lst, el):
     lst.remove(el)
     return lst
 
-def n_most_similar(n, word, model):
-    word_lst = []
-    n_similar = []
-    print('Running N most similar...')
-    for _ in range(n):
-        most_similar = model.most_similar(w, word_lst)
-        n_similar.append(most_similar)
-        word_lst.remove(most_similar)
+def n_most_similar(n, word_vec, model):
+    # word_lst = []
+    # n_similar = []
+    # print('Running N most similar...')
+    # for _ in range(n):
+    #     most_similar = model.most_similar(w, word_lst)
+    #     n_similar.append(most_similar)
+    #     word_lst.remove(most_similar)
+    distances = model.distances(word_vec, get_vocab(model))
+    print("Got distances!")
+    # print(distances)
+    # n_similar = model.similar_by_vector(word_vec, n)
     return n_similar
 
 
@@ -86,6 +90,8 @@ class VocabEncoder():
                                                   binary=True,
                                                   limit=LIMIT)  
         print("Loaded.")
+        sims_init = self.model.init_sims()
+        print("Vectors normalized.")
 
 def contains_mult_words(word):
     hyphen = re.compile('[a-zA-Z]-[a-zA-Z]')

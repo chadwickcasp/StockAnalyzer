@@ -33,12 +33,12 @@ class HeadlineAnalyzer():
 
     def remove_non_joiners(self, token_list):
         new_token_list = []
-        print(token_list)
+        # print(token_list)
         for token in token_list:
             # print(token, type(token))
-            print(token)
+            # print(token)
             new_token = self.regex.sub(u'', token)
-            print(token)
+            # print(token)
             # new_token = regex.sub('[\p{P}\p{Sm}]+', '', token)
             # Handle if not solely punctuation (words in addition to punctuation)
             if not new_token == u'':
@@ -85,10 +85,10 @@ class HeadlineAnalyzer():
             except UnicodeDecodeError as e:
                 print('Word has unicode characters.')
                 print('Skipping straight to normalization')
-        print('Attempting strip and norm on {}'.format(word))
+        # print('Attempting strip and norm on {}'.format(word))
         word = re.sub('-', '_', word)
         word_lower = string.lower(word)
-        print(word)
+        # print(word)
         word_norm = self.normalize_to_ascii(word_lower)
         word_stripped = self.remove_non_joiners([word_norm])
         if word_stripped:
