@@ -89,6 +89,11 @@ def main():
                                           np.zeros((1,300)))
             monthly_avg_vec = monthly_avg_vec / len(docs)
             print("Averaged monthly vector: {}".format(monthly_avg_vec))
+            # TODO: Fix this. It takes too long to process and hangs the CPU
+            # TODO: Attempts to compute distances between averaged vector
+            # TODO: and all vectors in the vocab (but I sense this 
+            # TODO: is impossible for gensim because the avg vector is
+            # TODO: not in the Google word2vec vocab)
             print(n_most_similar(5, monthly_avg_vec.T, VE.model))
             overall_avg_vec += monthly_avg_vec
             time.sleep(10)
