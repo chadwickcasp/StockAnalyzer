@@ -8,6 +8,7 @@ import quandl
 import requests
 from math import floor
 import json
+from math import *
 
 
 filename = 'keys.json'
@@ -26,13 +27,20 @@ def main2():
     Assumes certain directory structure to run.
     """
     number_of_months = 12   # Includes current month
+    months = int(raw_input("Enter the number of months to "
+                                     "go back for data: "))
     tickers = ['NVDA', 'AMD']   # Ticker symbol list
     ticker_string_list = ','.join(tickers)
     now = dt.datetime.utcnow()
+    print("Now: {}".format(now))
     do_once = True
 
     # Generate the month list for 
-    month_list = [((now.month + i-1)%12+1, int(floor((now.month+i)/13)+now.year-1)) for i in range(number_of_months+1)]
+    print(ceil(months/12.))
+    month_list = [((now.month - (i + 1))%12+1, \
+                   now.year + ((now.month - (i + 1))/12)) \
+                   for i in range(months)]
+    print(month_list)
     for month, year in month_list:
         print(month, year)
 
@@ -51,15 +59,28 @@ def main2():
                     'month': month}
         req = requests.get("https://api.nytimes.com/svc/archive/v1/"+str(year)+"/"+str(month)+".json", 
                             params=archives_payload)
-        news_data_json = req.json()
+        try:
+            news_data_json = req.json()
+        except ValueError as e:
+            print(req)
+            raise e
         docs = news_data_json['response']['docs']
         news_docs_df = pd.DataFrame(docs)
         news_docs_df['pub_date'] = [dt.datetime.strptime(str(d[0:10]), '%Y-%m-%d').date() for d in news_docs_df['pub_date']]
         news_docs_df = news_docs_df.rename(columns={'pub_date': 'date'})
+        # print(news_docs_df['headline'])
+        types = news_docs_df['headline'].apply(lambda x: type(x))
+        # print(news_docs_df[types==list]['headline'])
+        news_docs_df = news_docs_df[types==dict]
         has_kickers = news_docs_df['headline'].apply(lambda x: 'kicker' in x.keys())
         no_kickers = news_docs_df['headline'].apply(lambda x: 'kicker' not in x.keys())
+        has_main = news_docs_df['headline'].apply(lambda x: 'main' in x.keys())
+        news_docs_df = news_docs_df[has_main]
         # Headline formatting        
         news_docs_df.loc[has_kickers, 'headline'] = news_docs_df[has_kickers]['headline'].apply(lambda x: x['main']) + ': ' + news_docs_df[has_kickers]['headline'].apply(lambda x: x['kicker'])
+        # print(news_docs_df[no_kickers]['headline'].iloc[0].keys())
+        # keys = news_docs_df['headline'].apply(lambda x: x.keys())
+        # news_docs_df = news_docs_df['main' in keys]
         news_docs_df.loc[no_kickers, 'headline'] = news_docs_df[no_kickers]['headline'].apply(lambda x: x['main'])
         
         # Merge data
