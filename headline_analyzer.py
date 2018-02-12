@@ -98,7 +98,7 @@ class HeadlineAnalyzer():
             return ''
 
     # Tokenize and remove html, stopwords, punctuation from headline
-    def clean_data(self, headline):
+    def clean_data(self, headline, stem=True):
         # Decode anything that looks utf-8
         ex_ = headline.decode('utf-8')
         # print(ex_)
@@ -110,6 +110,7 @@ class HeadlineAnalyzer():
         ex_ = self.remove_punctuation(ex_)
         # print(ex_)
         # Remove endings from words to make the problem simpler
-        ex_ = [self.porter.stem(x) if x[0] in string.ascii_lowercase else x for x in ex_]
+        if stem:
+            ex_ = [self.porter.stem(x) if x[0] in string.ascii_lowercase else x for x in ex_]
         ex_ = [stem.encode('utf-8') for stem in ex_]
         return ex_
