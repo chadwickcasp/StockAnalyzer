@@ -3,3 +3,4 @@
 *.bin*
 *.csv
 *.pkl
+plotter.py
